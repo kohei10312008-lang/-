@@ -457,6 +457,41 @@
   }
 
   .result-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Scenario switcher */
+  .scenario-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+  }
+  .scenario-label {
+    font-size: 11px; color: var(--text3);
+    font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-right: 4px;
+  }
+  .scenario-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 12px; font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .scenario-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scenario-btn.scenario-active {
+    background: rgba(79,142,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .scenario-note {
+    margin-left: auto;
+    font-size: 11px; color: var(--text3);
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -500,6 +535,16 @@
 <div class="tabs">
   <button class="tab active" onclick="switchTab('build')" id="tab-build">📈 資産形成シミュレーション</button>
   <button class="tab" onclick="switchTab('draw')" id="tab-draw">💸 資産取崩しシミュレーション</button>
+</div>
+
+<!-- ===== シナリオ切替バー ===== -->
+<div class="scenario-bar">
+  <span class="scenario-label">レバレッジシナリオ</span>
+  <button class="scenario-btn scenario-active" id="scenario-btn-middle"
+    onclick="switchScenario('middle')">⚖️ 中間シナリオ</button>
+  <button class="scenario-btn" id="scenario-btn-optimistic"
+    onclick="switchScenario('optimistic')">🚀 楽観シナリオ</button>
+  <span class="scenario-note">レバNASDAQ100（2倍・3倍）のμ・σに反映</span>
 </div>
 
 <!-- ===== 資産形成 ===== -->
@@ -569,7 +614,7 @@
         <div class="index-header">
           <div class="index-dot" style="background:#a78bfa"></div>
           <span class="index-name">レバNASDAQ100（2倍）</span>
-          <span class="index-badge">μ≈20% σ≈45%</span>
+          <span class="index-badge" id="badge-lev">μ≈21% σ≈46%</span>
           <button class="index-toggle" id="tog-lev" onclick="toggleIndex('lev')"></button>
         </div>
         <div class="index-inputs" id="inp-lev">
@@ -588,7 +633,7 @@
         <div class="index-header">
           <div class="index-dot" style="background:#f76f6f"></div>
           <span class="index-name">レバNASDAQ100（3倍）</span>
-          <span class="index-badge">μ≈20% σ≈66%</span>
+          <span class="index-badge" id="badge-lev3">μ≈23% σ≈67%</span>
           <button class="index-toggle" id="tog-lev3" onclick="toggleIndex('lev3')"></button>
         </div>
         <div class="index-inputs" id="inp-lev3">
@@ -724,14 +769,48 @@
 
 <script>
 // ===== INDEX DATA =====
+// ===== シナリオ定義 =====
+const SCENARIOS = {
+  middle: {
+    label: '中間シナリオ',
+    lev:  { mu: 0.21,  sigma: 0.455 },
+    lev3: { mu: 0.23,  sigma: 0.67  },
+  },
+  optimistic: {
+    label: '楽観シナリオ',
+    lev:  { mu: 0.23,  sigma: 0.46  },
+    lev3: { mu: 0.27,  sigma: 0.69  },
+  },
+};
+let currentScenario = 'middle';
+
+function switchScenario(key) {
+  currentScenario = key;
+  const s = SCENARIOS[key];
+  IDX.lev.mu    = s.lev.mu;
+  IDX.lev.sigma = s.lev.sigma;
+  IDX.lev3.mu   = s.lev3.mu;
+  IDX.lev3.sigma= s.lev3.sigma;
+  // バッジ更新
+  document.getElementById('badge-lev').textContent
+    = `μ≈${Math.round(s.lev.mu*100)}% σ≈${Math.round(s.lev.sigma*100)}%`;
+  document.getElementById('badge-lev3').textContent
+    = `μ≈${Math.round(s.lev3.mu*100)}% σ≈${Math.round(s.lev3.sigma*100)}%`;
+  // ボタン状態更新
+  ['middle','optimistic'].forEach(k => {
+    const btn = document.getElementById('scenario-btn-'+k);
+    btn.classList.toggle('scenario-active', k===key);
+  });
+}
+
 // NASDAQ100実績: 日次μ_d≈0.00051, σ_d≈0.01382
 // 3倍レバ年次（Volatility Decay込み）: μ≈19.9%, σ≈65.8%
 const IDX = {
   world:  { mu: 0.084, sigma: 0.15,  color: '#4f8ef7', name: '全世界株式' },
   sp:     { mu: 0.105, sigma: 0.16,  color: '#3ecf8e', name: 'S&P500' },
   nasdaq: { mu: 0.13,  sigma: 0.22,  color: '#f7934f', name: 'NASDAQ' },
-  lev:    { mu: 0.195, sigma: 0.45,  color: '#a78bfa', name: 'レバNASDAQ100（2倍）' },
-  lev3:   { mu: 0.199, sigma: 0.658, color: '#f76f6f', name: 'レバNASDAQ100（3倍）' },
+  lev:    { mu: 0.21,  sigma: 0.455, color: '#a78bfa', name: 'レバNASDAQ100（2倍）' },
+  lev3:   { mu: 0.23,  sigma: 0.67,  color: '#f76f6f', name: 'レバNASDAQ100（3倍）' },
 };
 const IDX_KEYS = ['world','sp','nasdaq','lev','lev3'];
 const ENABLED = { world:true, sp:true, nasdaq:false, lev:false, lev3:false };
