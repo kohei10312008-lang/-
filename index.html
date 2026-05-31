@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資産シミュレーター</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1e2333;
+    --border: #2a3040;
+    --border2: #3a4558;
+    --text: #e8eaf0;
+    --text2: #8a93a8;
+    --text3: #5a6478;
+    --accent: #4f8ef7;
+    --accent2: #7eb8ff;
+    --green: #3ecf8e;
+    --orange: #f7934f;
+    --red: #f76f6f;
+    --purple: #a78bfa;
+    --yellow: #fbbf24;
+    --tab-h: 48px;
+    --radius: 10px;
+    --card-p: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  /* Header */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #4f8ef7, #7eb8ff);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .header h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+  .header p { font-size: 12px; color: var(--text2); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+  }
+  .tab {
+    height: var(--tab-h);
+    padding: 0 20px;
+    border: none;
+    background: none;
+    color: var(--text2);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Main layout */
+  .page { display: none; }
+  .page.active { display: flex; gap: 0; height: calc(100vh - 110px); }
+  @media (max-width: 768px) {
+    .page.active { flex-direction: column; height: auto; }
+  }
+
+  /* Panel */
+  .panel-left {
+    width: 340px; min-width: 280px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: var(--card-p);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  @media (max-width: 768px) { .panel-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); } }
+
+  .panel-right {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--card-p);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* Section */
+  .section { display: flex; flex-direction: column; gap: 10px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Index card */
+  .index-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .index-header {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+  }
+  .index-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .index-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .index-badge {
+    font-size: 10px; padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--border);
+    color: var(--text2);
+  }
+  .index-toggle {
+    width: 36px; height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+    flex-shrink: 0;
+  }
+  .index-toggle.on { background: var(--accent); }
+  .index-toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: transform 0.2s;
+  }
+  .index-toggle.on::after { transform: translateX(16px); }
+  .index-inputs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .input-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-label { font-size: 10px; color: var(--text2); }
+  .input-field {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    padding: 6px 8px;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { outline: none; border-color: var(--accent); }
+  .input-field:disabled { opacity: 0.4; }
+
+  /* Stats row */
+  .stats-row { display: flex; gap: 6px; }
+  .stat-chip {
+    flex: 1; text-align: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 4px;
+  }
+  .stat-chip .sv { font-size: 11px; font-weight: 600; color: var(--accent2); }
+  .stat-chip .sl { font-size: 9px; color: var(--text3); }
+
+  /* Run button */
+  .run-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .run-btn:hover { opacity: 0.9; }
+  .run-btn:active { transform: scale(0.98); }
+  .run-btn.running { background: var(--text3); cursor: not-allowed; }
+
+  /* Chart card */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--card-p);
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .chart-subtitle { font-size: 11px; color: var(--text2); margin-bottom: 14px; }
+  .chart-wrap { position: relative; }
+
+  /* Results table */
+  .result-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .result-table th {
+    padding: 4px 6px; text-align: right;
+    color: var(--text3); font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .result-table th:first-child { text-align: left; }
+  .result-table td {
+    padding: 5px 6px; text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .result-table td:first-child { text-align: left; color: var(--text2); }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table .median { color: var(--green); font-weight: 600; }
+  .result-table .p5 { color: var(--red); }
+  .result-table .p95 { color: var(--accent2); }
+  /* compact table variant: 取崩し比較テーブル用 */
+  .result-table-compact { font-size: 10px; }
+  .result-table-compact th, .result-table-compact td { padding: 4px 5px; }
+  /* テーブル区切り線 */
+  .result-table .col-sep { border-left: 1px solid var(--border2); }
+
+  /* Pie chart area */
+  .pie-wrap {
+    display: flex; gap: 20px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .pie-canvas-wrap { width: 140px; height: 140px; flex-shrink: 0; }
+  .pie-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 120px; }
+  .pie-item { display: flex; align-items: center; gap: 8px; }
+  .pie-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .pie-lbl { flex: 1; font-size: 12px; color: var(--text2); }
+  .pie-pct { font-size: 12px; font-weight: 600; }
+
+  /* Compare cards */
+  .compare-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 600px) { .compare-row { grid-template-columns: 1fr; } }
+  .compare-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .compare-card-title {
+    font-size: 12px; font-weight: 600;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .compare-tag {
+    font-size: 10px; padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .tag-rate { background: rgba(78,142,247,0.15); color: var(--accent); }
+  .tag-fixed { background: rgba(62,207,142,0.15); color: var(--green); }
+
+  /* Success badge */
+  .success-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 6px; margin-top: 10px;
+  }
+  .success-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+  }
+  .success-item .year { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+  .success-item .mark { font-size: 18px; }
+  .success-item .pct { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .mark-ok { color: var(--green); }
+  .mark-ng { color: var(--red); }
+  .mark-warn { color: var(--yellow); }
+
+  /* Range slider */
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row label { font-size: 11px; color: var(--text2); white-space: nowrap; }
+  .slider-row input[type=range] {
+    flex: 1; accent-color: var(--accent);
+    height: 4px;
+  }
+  .slider-val { font-size: 12px; font-weight: 600; color: var(--accent); min-width: 40px; text-align: right; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex: 1; gap: 10px;
+    color: var(--text3); padding: 40px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 36px; opacity: 0.4; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s;
+  }
+
+  .result-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">📈</div>
+  <div>
+    <h1>資産シミュレーター</h1>
+    <p>モンテカルロ法 10,000回シミュレーション</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('build')" id="tab-build">📊 資産形成</button>
+  <button class="tab" onclick="switchTab('draw')" id="tab-draw">💰 資産取崩し</button>
+</div>
+
+<!-- ===== 資産形成 ===== -->
+<div class="page active" id="page-build">
+  <div class="panel-left">
+    <div class="section">
+      <div class="section-title">指数の設定</div>
+      <!-- 全世界 -->
+      <div class="index-card" id="card-world">
+        <div class="index-header">
+          <div class="index-dot" style="background:#4f8ef7"></div>
+          <span class="index-name">全世界株式</span>
+          <span class="index-badge">μ8.4% σ15%</span>
+          <button class="index-toggle on" id="tog-world" onclick="toggleIndex('world')"></button>
+        </div>
+        <div class="index-inputs" id="inp-world">
+          <div class="input-group">
+            <span class="input-label">一括投資（万円）</span>
+            <input class="input-field" id="world-lump" type="number" value="0" min="0" step="10">
+          </div>
+          <div class="input-group">
+            <span class="input-label">月積立（万円）</span>
+            <input class="input-field" id="world-monthly" type="number" value="0" min="0" step="1">
+          </div>
+        </div>
+      </div>
+      <!-- S&P500 -->
+      <div class="index-card" id="card-sp">
+        <div class="index-header">
+          <div class="index-dot" style="background:#3ecf8e"></div>
+          <span class="index-name">S&P500</span>
+          <span class="index-badge">μ10.5% σ16%</span>
+          <button class="index-toggle on" id="tog-sp" onclick="toggleIndex('sp')"></button>
+        </div>
+        <div class="index-inputs" id="inp-sp">
+          <div class="input-group">
+            <span class="input-label">一括投資（万円）</span>
+            <input class="input-field" id="sp-lump" type="number" value="0" min="0" step="10">
+          </div>
+          <div class="input-group">
+            <span class="input-label">月積立（万円）</span>
+            <input class="input-field" id="sp-monthly" type="number" value="0" min="0" step="1">
+          </div>
+        </div>
+      </div>
+      <!-- NASDAQ -->
+      <div class="index-card" id="card-nasdaq">
+        <div class="index-header">
+          <div class="index-dot" style="background:#f7934f"></div>
+          <span class="index-name">NASDAQ</span>
+          <span class="index-badge">μ13% σ22%</span>
+          <button class="index-toggle" id="tog-nasdaq" onclick="toggleIndex('nasdaq')"></button>
+        </div>
+        <div class="index-inputs" id="inp-nasdaq">
+          <div class="input-group">
+            <span class="input-label">一括投資（万円）</span>
+            <input class="input-field" id="nasdaq-lump" type="number" value="0" min="0" step="10" disabled>
+          </div>
+          <div class="input-group">
+            <span class="input-label">月積立（万円）</span>
+            <input class="input-field" id="nasdaq-monthly" type="number" value="0" min="0" step="1" disabled>
+          </div>
+        </div>
+      </div>
+      <!-- レバNASDAQ100 2倍 -->
+      <div class="index-card" id="card-lev">
+        <div class="index-header">
+          <div class="index-dot" style="background:#a78bfa"></div>
+          <span class="index-name">レバNASDAQ100（2倍）</span>
+          <span class="index-badge">μ≈20% σ≈45%</span>
+          <button class="index-toggle" id="tog-lev" onclick="toggleIndex('lev')"></button>
+        </div>
+        <div class="index-inputs" id="inp-lev">
+          <div class="input-group">
+            <span class="input-label">一括投資（万円）</span>
+            <input class="input-field" id="lev-lump" type="number" value="0" min="0" step="10" disabled>
+          </div>
+          <div class="input-group">
+            <span class="input-label">月積立（万円）</span>
+            <input class="input-field" id="lev-monthly" type="number" value="0" min="0" step="1" disabled>
+          </div>
+        </div>
+      </div>
+      <!-- レバNASDAQ100 3倍 -->
+      <div class="index-card" id="card-lev3">
+        <div class="index-header">
+          <div class="index-dot" style="background:#f76f6f"></div>
+          <span class="index-name">レバNASDAQ100（3倍）</span>
+          <span class="index-badge">μ≈20% σ≈66%</span>
+          <button class="index-toggle" id="tog-lev3" onclick="toggleIndex('lev3')"></button>
+        </div>
+        <div class="index-inputs" id="inp-lev3">
+          <div class="input-group">
+            <span class="input-label">一括投資（万円）</span>
+            <input class="input-field" id="lev3-lump" type="number" value="0" min="0" step="10" disabled>
+          </div>
+          <div class="input-group">
+            <span class="input-label">月積立（万円）</span>
+            <input class="input-field" id="lev3-monthly" type="number" value="0" min="0" step="1" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">シミュレーション期間</div>
+      <div class="slider-row">
+        <label>年数</label>
+        <input type="range" id="build-years" min="5" max="50" step="5" value="30" oninput="onBuildYearsChange()">
+        <span class="slider-val" id="build-years-val">30年</span>
+      </div>
+      <div class="slider-row">
+        <label>積立終了</label>
+        <input type="range" id="build-accum" min="0" max="30" step="1" value="30" oninput="document.getElementById('build-accum-val').textContent=this.value=='0'?'即時終了':this.value+'年'">
+        <span class="slider-val" id="build-accum-val">30年</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:-4px;">積立終了後は運用のみ継続</div>
+    </div>
+
+    <button class="run-btn" id="run-build" onclick="runBuild()">
+      <span id="run-build-icon">▶</span> シミュレーション実行
+      <div class="progress-bar" id="build-progress-wrap" style="display:none;position:absolute;bottom:0;left:0;right:0;border-radius:0 0 10px 10px">
+        <div class="progress-fill" id="build-progress"></div>
+      </div>
+    </button>
+  </div>
+
+  <div class="panel-right" id="build-results">
+    <div class="empty-state" id="build-empty">
+      <div class="empty-icon">📊</div>
+      <p>指数と金額を入力して<br>シミュレーションを実行してください</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 資産取崩し ===== -->
+<div class="page" id="page-draw">
+  <div class="panel-left">
+    <div class="section">
+      <div class="section-title">初期資産（指数別）</div>
+      <div class="index-card">
+        <div class="index-header">
+          <div class="index-dot" style="background:#4f8ef7"></div>
+          <span class="index-name">全世界株式</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">保有額（万円）</span>
+          <input class="input-field" id="d-world" type="number" value="0" min="0" step="10">
+        </div>
+      </div>
+      <div class="index-card">
+        <div class="index-header">
+          <div class="index-dot" style="background:#3ecf8e"></div>
+          <span class="index-name">S&P500</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">保有額（万円）</span>
+          <input class="input-field" id="d-sp" type="number" value="0" min="0" step="10">
+        </div>
+      </div>
+      <div class="index-card">
+        <div class="index-header">
+          <div class="index-dot" style="background:#f7934f"></div>
+          <span class="index-name">NASDAQ</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">保有額（万円）</span>
+          <input class="input-field" id="d-nasdaq" type="number" value="0" min="0" step="10">
+        </div>
+      </div>
+      <div class="index-card">
+        <div class="index-header">
+          <div class="index-dot" style="background:#a78bfa"></div>
+          <span class="index-name">レバNASDAQ100（2倍）</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">保有額（万円）</span>
+          <input class="input-field" id="d-lev" type="number" value="0" min="0" step="10">
+        </div>
+      </div>
+      <div class="index-card">
+        <div class="index-header">
+          <div class="index-dot" style="background:#f76f6f"></div>
+          <span class="index-name">レバNASDAQ100（3倍）</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">保有額（万円）</span>
+          <input class="input-field" id="d-lev3" type="number" value="0" min="0" step="10">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">取崩し設定</div>
+      <div class="slider-row">
+        <label>期間</label>
+        <input type="range" id="draw-years" min="5" max="50" step="5" value="30" oninput="document.getElementById('draw-years-val').textContent=this.value+'年'">
+        <span class="slider-val" id="draw-years-val">30年</span>
+      </div>
+      <div class="input-group">
+        <span class="input-label">年定率売却（%）</span>
+        <input class="input-field" id="draw-rate" type="number" value="4" min="0.1" max="20" step="0.1">
+      </div>
+      <div class="input-group">
+        <span class="input-label">年定額売却（万円）</span>
+        <input class="input-field" id="draw-fixed" type="number" value="200" min="0" step="10">
+      </div>
+    </div>
+
+    <button class="run-btn" id="run-draw" onclick="runDraw()">
+      <span>▶</span> シミュレーション実行
+    </button>
+  </div>
+
+  <div class="panel-right" id="draw-results">
+    <div class="empty-state" id="draw-empty">
+      <div class="empty-icon">💰</div>
+      <p>資産額と取崩し条件を入力して<br>シミュレーションを実行してください</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== INDEX DATA =====
+// NASDAQ100実績: 日次μ_d≈0.00051, σ_d≈0.01382
+// 3倍レバ年次（Volatility Decay込み）: μ≈19.9%, σ≈65.8%
+const IDX = {
+  world:  { mu: 0.084, sigma: 0.15,  color: '#4f8ef7', name: '全世界株式' },
+  sp:     { mu: 0.105, sigma: 0.16,  color: '#3ecf8e', name: 'S&P500' },
+  nasdaq: { mu: 0.13,  sigma: 0.22,  color: '#f7934f', name: 'NASDAQ' },
+  lev:    { mu: 0.195, sigma: 0.45,  color: '#a78bfa', name: 'レバNASDAQ100（2倍）' },
+  lev3:   { mu: 0.199, sigma: 0.658, color: '#f76f6f', name: 'レバNASDAQ100（3倍）' },
+};
+const IDX_KEYS = ['world','sp','nasdaq','lev','lev3'];
+const ENABLED = { world:true, sp:true, nasdaq:false, lev:false, lev3:false };
+
+// ===== UTILS =====
+function randn() {
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function pct(arr, p) {
+  const s=[...arr].sort((a,b)=>a-b);
+  const i=(p/100)*(s.length-1);
+  const lo=Math.floor(i), hi=Math.ceil(i);
+  return s[lo]+(s[hi]-s[lo])*(i-lo);
+}
+function fmt(v) {
+  if(v>=10000) return (v/10000).toFixed(1)+'億円';
+  return Math.round(v).toLocaleString()+'万円';
+}
+function fmtM(v) { return Math.round(v).toLocaleString()+'万円'; }
+
+// ===== SLIDER SYNC: 積立終了年はシミュレーション年数を超えられない =====
+function onBuildYearsChange() {
+  const yrs = parseInt(document.getElementById('build-years').value);
+  document.getElementById('build-years-val').textContent = yrs + '年';
+  const accum = document.getElementById('build-accum');
+  accum.max = yrs;
+  if(parseInt(accum.value) > yrs) {
+    accum.value = yrs;
+    document.getElementById('build-accum-val').textContent = yrs + '年';
+  }
+}
+
+// ===== TOGGLE =====
+function toggleIndex(key) {
+  ENABLED[key] = !ENABLED[key];
+  const tog = document.getElementById('tog-'+key);
+  const inp = document.getElementById('inp-'+key);
+  tog.classList.toggle('on', ENABLED[key]);
+  inp.querySelectorAll('input').forEach(i => i.disabled = !ENABLED[key]);
+}
+
+// ===== TAB =====
+function switchTab(t) {
+  ['build','draw'].forEach(k => {
+    document.getElementById('tab-'+k).classList.toggle('active', k===t);
+    document.getElementById('page-'+k).classList.toggle('active', k===t);
+  });
+}
+
+// ===== SIMULATE ONE PATH (growth) =====
+function simPath(entries, years) {
+  // entries: [{lump, monthly, mu, sigma}]
+  let total = entries.reduce((s,e)=>s+e.lump, 0);
+  const monthly_total = entries.reduce((s,e)=>s+e.monthly, 0);
+  const mu_eff = entries.length===0 ? 0 : entries.reduce((s,e)=>{
+    const w = (e.lump+e.monthly*12) || 1;
+    return s + e.mu*(e.lump+e.monthly*12);
+  },0) / Math.max(1, entries.reduce((s,e)=>s+(e.lump+e.monthly*12),0));
+  const sig_eff = entries.length===0 ? 0 : Math.sqrt(entries.reduce((s,e)=>{
+    const w = (e.lump+e.monthly*12) || 1;
+    return s + e.sigma*e.sigma*(e.lump+e.monthly*12);
+  },0) / Math.max(1, entries.reduce((s,e)=>s+(e.lump+e.monthly*12),0)));
+
+  // simulate monthly with blended stats
+  let val = total;
+  const annual_monthly = monthly_total * 12;
+  const snapshots = [];
+  for(let y=0; y<years; y++) {
+    const r = randn() * sig_eff + mu_eff;
+    val = val * (1+r) + annual_monthly;
+    if((y+1)%5===0) snapshots.push(Math.max(0, val));
+  }
+  return snapshots;
+}
+
+// ===== SIMULATE PORTFOLIO =====
+function simPortfolio(entries, years, accumYears) {
+  // accumYears: 積立終了年（以降は積立なし・運用のみ）
+  const n = 10000;
+  const checkpoints = [];
+  for(let i=0;i<Math.floor(years/5);i++) checkpoints.push((i+1)*5);
+  const results = checkpoints.map(()=>[]);
+
+  for(let sim=0; sim<n; sim++) {
+    // run each index separately
+    let vals = entries.map(e => e.lump);
+    for(let y=0; y<years; y++) {
+      const isAccum = y < accumYears; // 積立期間内かどうか
+      vals = vals.map((v,i) => {
+        const e = entries[i];
+        const r = randn() * e.sigma + e.mu;
+        return Math.max(0, v*(1+r) + (isAccum ? e.monthly*12 : 0));
+      });
+      if((y+1)%5===0) {
+        const ci = Math.floor((y+1)/5)-1;
+        results[ci].push(vals.reduce((s,v)=>s+v,0));
+      }
+    }
+  }
+  return { checkpoints, results };
+}
+
+// ===== CHART INSTANCES =====
+let buildChart = null, pieChart = null;
+let drawRateChart = null, drawFixedChart = null;
+
+function destroyChart(c) { if(c) { try{c.destroy()}catch(e){} } return null; }
+
+function fanDataset(label, results, p1, p2, color, alpha) {
+  return {
+    label,
+    data: results.map(r=>[pct(r,p1)/10000, pct(r,p2)/10000]),
+    borderWidth: 0,
+    backgroundColor: color.replace(')',`,${alpha})`).replace('rgb','rgba'),
+    fill: true,
+    pointRadius: 0,
+  };
+}
+
+// ===== RUN BUILD =====
+function runBuild() {
+  const entries = IDX_KEYS.filter(k=>ENABLED[k]).map(k=>({
+    lump: parseFloat(document.getElementById(k+'-lump').value)||0,
+    monthly: parseFloat(document.getElementById(k+'-monthly').value)||0,
+    mu: IDX[k].mu,
+    sigma: IDX[k].sigma,
+    color: IDX[k].color,
+    name: IDX[k].name,
+    key: k,
+  }));
+  const active = entries.filter(e=>e.lump>0||e.monthly>0);
+  if(active.length===0) { alert('金額を1つ以上入力してください'); return; }
+
+  const years = parseInt(document.getElementById('build-years').value);
+  const accumYears = parseInt(document.getElementById('build-accum').value);
+  const btn = document.getElementById('run-build');
+  btn.classList.add('running');
+  btn.querySelector('span').textContent='計算中...';
+
+  setTimeout(()=>{
+    const { checkpoints, results } = simPortfolio(active, years, accumYears);
+
+    // 投資元本の推移（積立終了年まで増加、以降は固定）
+    const totalLump = active.reduce((s,e)=>s+e.lump, 0);
+    const totalMonthly = active.reduce((s,e)=>s+e.monthly, 0);
+    const principalLine = checkpoints.map(y => {
+      const effectiveY = Math.min(y, accumYears);
+      return (totalLump + totalMonthly*12*effectiveY) / 10000;
+    });
+
+    // --- Build results HTML ---
+    const el = document.getElementById('build-results');
+    el.innerHTML = '';
+
+    // Fan chart
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'chart-card';
+    chartDiv.innerHTML = `
+      <div class="chart-title">ポートフォリオ資産推移（合算）</div>
+      <div class="chart-subtitle">10,000回シミュレーション・パーセンタイル帯表示（億円）</div>
+      <div class="chart-wrap"><canvas id="build-canvas" height="280"></canvas></div>
+    `;
+    el.appendChild(chartDiv);
+
+    buildChart = destroyChart(buildChart);
+    setTimeout(()=>{
+      const ctx = document.getElementById('build-canvas').getContext('2d');
+      const labels = checkpoints.map(y=>y+'年');
+      // Fan bands
+      const datasets = [
+        { label:'5-95%帯', data: results.map(r=>[pct(r,5)/10000, pct(r,95)/10000]), backgroundColor:'rgba(79,142,247,0.10)', borderWidth:0, pointRadius:0 },
+        { label:'20-80%帯', data: results.map(r=>[pct(r,20)/10000, pct(r,80)/10000]), backgroundColor:'rgba(79,142,247,0.18)', borderWidth:0, pointRadius:0 },
+        { label:'中央値', data: results.map(r=>pct(r,50)/10000), borderColor:'#4f8ef7', backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#4f8ef7', tension:0.3 },
+        { label:'下位5%', data: results.map(r=>pct(r,5)/10000), borderColor:'rgba(247,111,111,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(247,111,111,0.7)', tension:0.3 },
+        { label:'下位20%', data: results.map(r=>pct(r,20)/10000), borderColor:'rgba(247,171,111,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(247,171,111,0.8)', tension:0.3 },
+        { label:'上位20%', data: results.map(r=>pct(r,80)/10000), borderColor:'rgba(62,207,142,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(62,207,142,0.8)', tension:0.3 },
+        { label:'上位5%', data: results.map(r=>pct(r,95)/10000), borderColor:'rgba(126,184,255,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(126,184,255,0.7)', tension:0.3 },
+        { label:'投資元本', data: principalLine, borderColor:'rgba(255,255,255,0.35)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[2,4], pointRadius:0, tension:0 },
+      ];
+      buildChart = new Chart(ctx, {
+        type:'line',
+        data:{ labels, datasets },
+        options:{
+          responsive:true,
+          maintainAspectRatio:true,
+          plugins:{
+            legend:{ display:true, position:'bottom', labels:{ color:'#8a93a8', font:{size:11}, boxWidth:14, padding:12 } },
+            tooltip:{ mode:'index', intersect:false, backgroundColor:'#1e2333', borderColor:'#2a3040', borderWidth:1,
+              titleColor:'#e8eaf0', bodyColor:'#8a93a8',
+              callbacks:{ label: ctx => {
+                const v = ctx.raw;
+                if(Array.isArray(v)) return null;
+                const man = Math.round(v * 10000).toLocaleString();
+                return `${ctx.dataset.label}: ${v.toFixed(2)}億円（${man}万円）`;
+              }}
+            }
+          },
+          scales:{
+            x:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478'} },
+            y:{ grid:{color:'#2a3040'}, ticks:{ color:'#5a6478', callback: v=>v+'億' },
+              title:{display:true,text:'資産額（億円）',color:'#5a6478',font:{size:11}} }
+          },
+          interaction:{ mode:'index', intersect:false }
+        }
+      });
+    },50);
+
+    // Results table
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'chart-card';
+    let tbl = `<div class="chart-title">パーセンタイル別資産額</div>
+    <table class="result-table">
+    <thead><tr><th>時点</th><th style="color:rgba(255,255,255,0.45)">投資元本</th><th class="p5">下位5%</th><th style="color:#f7ab6f">下位20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上位20%</th><th class="p95">上位5%</th></tr></thead><tbody>`;
+    checkpoints.forEach((y,i)=>{
+      const r = results[i];
+      const principal = totalLump + totalMonthly*12*Math.min(y, accumYears);
+      tbl += `<tr>
+        <td>${y}年後</td>
+        <td style="color:rgba(255,255,255,0.45)">${fmt(principal)}</td>
+        <td class="p5">${fmt(pct(r,5))}</td>
+        <td style="color:#f7ab6f">${fmt(pct(r,20))}</td>
+        <td class="median">${fmt(pct(r,50))}</td>
+        <td style="color:#3ecf8e">${fmt(pct(r,80))}</td>
+        <td class="p95">${fmt(pct(r,95))}</td>
+      </tr>`;
+    });
+    tbl += '</tbody></table>';
+    tableDiv.innerHTML = `<div class="chart-title" style="margin-bottom:8px">パーセンタイル別資産額</div><div class="result-table-wrap" style="max-height:260px;overflow-y:auto;">` + tbl + `</div>`;
+    el.appendChild(tableDiv);
+
+    // Pie chart
+    if(active.length>1) {
+      const pieDiv = document.createElement('div');
+      pieDiv.className = 'chart-card';
+      const totalInvest = active.reduce((s,e)=>s+e.lump+e.monthly*12*years,0);
+      const shares = active.map(e=>((e.lump+e.monthly*12*years)/totalInvest*100).toFixed(1));
+      let legendHtml = active.map((e,i)=>`
+        <div class="pie-item">
+          <div class="pie-dot" style="background:${e.color}"></div>
+          <span class="pie-lbl">${e.name}</span>
+          <span class="pie-pct">${shares[i]}%</span>
+        </div>`).join('');
+      pieDiv.innerHTML = `
+        <div class="chart-title">投入額ベースのアセット配分</div>
+        <div class="pie-wrap">
+          <div class="pie-canvas-wrap"><canvas id="pie-canvas"></canvas></div>
+          <div class="pie-legend">${legendHtml}</div>
+        </div>`;
+      el.appendChild(pieDiv);
+      pieChart = destroyChart(pieChart);
+      setTimeout(()=>{
+        const ctx2 = document.getElementById('pie-canvas').getContext('2d');
+        pieChart = new Chart(ctx2, {
+          type:'doughnut',
+          data:{ labels: active.map(e=>e.name), datasets:[{
+            data: active.map(e=>e.lump+e.monthly*12*years),
+            backgroundColor: active.map(e=>e.color),
+            borderWidth:0,
+          }]},
+          options:{ responsive:true, maintainAspectRatio:true,
+            plugins:{ legend:{display:false} }
+          }
+        });
+      },60);
+    }
+
+    btn.classList.remove('running');
+    btn.querySelector('span').textContent='▶';
+  }, 30);
+}
+
+// ===== RUN DRAW =====
+function runDraw() {
+  const keys = IDX_KEYS;
+  const assets = keys.map(k=>parseFloat(document.getElementById('d-'+k).value)||0);
+  const total = assets.reduce((s,v)=>s+v,0);
+  if(total===0) { alert('保有額を1つ以上入力してください'); return; }
+
+  const years = parseInt(document.getElementById('draw-years').value);
+  const rate = parseFloat(document.getElementById('draw-rate').value)/100;
+  const fixed = parseFloat(document.getElementById('draw-fixed').value);
+
+  // Build weighted avg stats
+  const weights = keys.map(k=>assets[IDX_KEYS.indexOf(k)]/total);
+  const mu_eff = keys.reduce((s,k,i)=>s+IDX[k].mu*weights[i],0);
+  const sig_eff = Math.sqrt(keys.reduce((s,k,i)=>s+IDX[k].sigma*IDX[k].sigma*weights[i],0));
+
+  const N=10000;
+  const checkpoints=[];
+  for(let i=0;i<Math.floor(years/5);i++) checkpoints.push((i+1)*5);
+
+  // rate results
+  const rateResults = checkpoints.map(()=>[]);
+  const rateWithdrawResults = checkpoints.map(()=>[]); // 定率取崩し額
+  const fixedResults = checkpoints.map(()=>[]);
+
+  for(let sim=0; sim<N; sim++){
+    let vr=total, vf=total;
+    // 定率：5年ごとの取崩し額を累積平均で記録
+    const rateWithdrawAcc = checkpoints.map(()=>[]); // 各チェックポイント期間の年間取崩し額
+    let periodWithdrawSum = checkpoints.map(()=>0);
+    let periodCount = checkpoints.map(()=>0);
+
+    for(let y=0; y<years; y++){
+      const r=randn()*sig_eff+mu_eff;
+      // 定率：運用後残高×定率が今年の取崩し額
+      const preR = Math.max(0, vr*(1+r));
+      const withdrawR = preR * rate;
+      vr = preR - withdrawR;
+      vf = Math.max(0, vf*(1+r) - fixed);
+
+      // チェックポイントの期間に属するか判定（直前5年間の平均取崩し額）
+      const ci = Math.floor(y/5); // 0始まり
+      if(ci < checkpoints.length){
+        periodWithdrawSum[ci] += withdrawR;
+        periodCount[ci]++;
+      }
+
+      if((y+1)%5===0){
+        const idx=Math.floor((y+1)/5)-1;
+        rateResults[idx].push(vr);
+        fixedResults[idx].push(vf);
+        // その5年間の平均年間取崩し額
+        const avg = periodCount[idx]>0 ? periodWithdrawSum[idx]/periodCount[idx] : 0;
+        rateWithdrawResults[idx].push(avg);
+      }
+    }
+  }
+
+  // Success rates
+  const successRate = checkpoints.map((_,i)=>rateResults[i].filter(v=>v>0).length/N*100);
+  const successFixed = checkpoints.map((_,i)=>fixedResults[i].filter(v=>v>0).length/N*100);
+
+  // --- Render ---
+  const el = document.getElementById('draw-results');
+  el.innerHTML='';
+
+  // Compare charts side by side
+  const compareWrap = document.createElement('div');
+  compareWrap.className = 'compare-row';
+
+  function buildCompareCard(title, tag, tagClass, canvasId, results, successes) {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `
+      <div class="compare-card-title">${title} <span class="compare-tag ${tagClass}">${tag}</span></div>
+      <div class="chart-wrap"><canvas id="${canvasId}" height="220"></canvas></div>`;
+    return card;
+  }
+
+  const rateCard = buildCompareCard('年定率売却', `${(rate*100).toFixed(1)}%/年`, 'tag-rate', 'draw-rate-canvas', rateResults, successRate);
+  const fixedCard = buildCompareCard('年定額売却', `${fixed}万円/年`, 'tag-fixed', 'draw-fixed-canvas', fixedResults, successFixed);
+  compareWrap.appendChild(rateCard);
+  compareWrap.appendChild(fixedCard);
+  el.appendChild(compareWrap);
+
+  function makeDrawChart(canvasId, results, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: checkpoints.map(y=>y+'年'),
+        datasets:[
+          { label:'5-95%帯', data:results.map(r=>[pct(r,5)/10000,pct(r,95)/10000]), backgroundColor:`${color}18`, borderWidth:0, pointRadius:0 },
+          { label:'20-80%帯', data:results.map(r=>[pct(r,20)/10000,pct(r,80)/10000]), backgroundColor:`${color}30`, borderWidth:0, pointRadius:0 },
+          { label:'中央値', data:results.map(r=>pct(r,50)/10000), borderColor:color, backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, pointBackgroundColor:color, tension:0.3 },
+          { label:'下位5%', data:results.map(r=>pct(r,5)/10000), borderColor:'rgba(247,111,111,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(247,111,111,0.7)', tension:0.3 },
+          { label:'下位20%', data:results.map(r=>pct(r,20)/10000), borderColor:'rgba(247,171,111,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(247,171,111,0.8)', tension:0.3 },
+          { label:'上位20%', data:results.map(r=>pct(r,80)/10000), borderColor:'rgba(62,207,142,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(62,207,142,0.8)', tension:0.3 },
+          { label:'上位5%', data:results.map(r=>pct(r,95)/10000), borderColor:'rgba(126,184,255,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(126,184,255,0.7)', tension:0.3 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:true, position:'bottom', labels:{ color:'#8a93a8', font:{size:11}, boxWidth:14, padding:10 } },
+          tooltip:{
+            mode:'index', intersect:false,
+            backgroundColor:'#1e2333', borderColor:'#2a3040', borderWidth:1,
+            titleColor:'#e8eaf0', bodyColor:'#8a93a8',
+            callbacks:{
+              label: ctx => {
+                const v = ctx.raw;
+                if(Array.isArray(v)) return null;
+                const man = Math.round(v * 10000).toLocaleString();
+                return `${ctx.dataset.label}: ${v.toFixed(2)}億円（${man}万円）`;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478',font:{size:10}} },
+          y:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478', callback:v=>v+'億'} }
+        }
+      }
+    });
+  }
+
+  // 定率取崩し額ファンチャートカード
+  const withdrawChartDiv = document.createElement('div');
+  withdrawChartDiv.className = 'chart-card';
+  withdrawChartDiv.innerHTML = `
+    <div class="chart-title">年間取崩し額の推移（定率 ${(rate*100).toFixed(1)}%）</div>
+    <div class="chart-subtitle">残高に連動して変動する取崩し額のパーセンタイル帯（万円）</div>
+    <div class="chart-wrap"><canvas id="draw-withdraw-canvas" height="220"></canvas></div>`;
+  el.appendChild(withdrawChartDiv);
+
+  let drawWithdrawChart = null;
+
+  setTimeout(()=>{
+    drawRateChart = destroyChart(drawRateChart);
+    drawFixedChart = destroyChart(drawFixedChart);
+    drawWithdrawChart = destroyChart(drawWithdrawChart);
+    drawRateChart = makeDrawChart('draw-rate-canvas', rateResults, '#4f8ef7');
+    drawFixedChart = makeDrawChart('draw-fixed-canvas', fixedResults, '#3ecf8e');
+
+    // 取崩し額ファンチャート（単位：万円のまま）
+    const wCtx = document.getElementById('draw-withdraw-canvas').getContext('2d');
+    const wColor = '#f7934f';
+    drawWithdrawChart = new Chart(wCtx, {
+      type:'line',
+      data:{
+        labels: checkpoints.map(y=>y+'年'),
+        datasets:[
+          { label:'5-95%帯', data:rateWithdrawResults.map(r=>[pct(r,5), pct(r,95)]), backgroundColor:'rgba(247,147,79,0.10)', borderWidth:0, pointRadius:0 },
+          { label:'20-80%帯', data:rateWithdrawResults.map(r=>[pct(r,20), pct(r,80)]), backgroundColor:'rgba(247,147,79,0.18)', borderWidth:0, pointRadius:0 },
+          { label:'中央値', data:rateWithdrawResults.map(r=>pct(r,50)), borderColor:wColor, backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, pointBackgroundColor:wColor, tension:0.3 },
+          { label:'下位5%', data:rateWithdrawResults.map(r=>pct(r,5)), borderColor:'rgba(247,111,111,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(247,111,111,0.7)', tension:0.3 },
+          { label:'下位20%', data:rateWithdrawResults.map(r=>pct(r,20)), borderColor:'rgba(247,171,111,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(247,171,111,0.8)', tension:0.3 },
+          { label:'上位20%', data:rateWithdrawResults.map(r=>pct(r,80)), borderColor:'rgba(62,207,142,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(62,207,142,0.8)', tension:0.3 },
+          { label:'上位5%', data:rateWithdrawResults.map(r=>pct(r,95)), borderColor:'rgba(126,184,255,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(126,184,255,0.7)', tension:0.3 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:true, position:'bottom', labels:{ color:'#8a93a8', font:{size:11}, boxWidth:14, padding:10 } },
+          tooltip:{
+            mode:'index', intersect:false,
+            backgroundColor:'#1e2333', borderColor:'#2a3040', borderWidth:1,
+            titleColor:'#e8eaf0', bodyColor:'#8a93a8',
+            callbacks:{
+              label: ctx => {
+                const v = ctx.raw;
+                if(Array.isArray(v)) return null;
+                return `${ctx.dataset.label}: ${Math.round(v).toLocaleString()}万円`;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478',font:{size:10}} },
+          y:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478', callback:v=>Math.round(v).toLocaleString()+'万'},
+            title:{display:true, text:'年間取崩し額（万円）', color:'#5a6478', font:{size:11}} }
+        }
+      }
+    });
+  },50);
+
+  // Success grid
+  const successDiv = document.createElement('div');
+  const genSuccessGrid = (successes, label) => {
+    return successes.map((s,i)=>{
+      const mark = s>=95 ? '○' : s>=70 ? '△' : '×';
+      const cls = s>=95 ? 'mark-ok' : s>=70 ? 'mark-warn' : 'mark-ng';
+      return `<div class="success-item">
+        <div class="year">${checkpoints[i]}年後</div>
+        <div class="mark ${cls}">${mark}</div>
+        <div class="pct">${s.toFixed(1)}%</div>
+      </div>`;
+    }).join('');
+  };
+
+  successDiv.className = 'chart-card';
+  successDiv.innerHTML = `
+    <div class="chart-title">成功確率（残高≥0）</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
+      <div>
+        <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600">年定率 ${(rate*100).toFixed(1)}%</div>
+        <div class="success-grid">${genSuccessGrid(successRate)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--green);margin-bottom:8px;font-weight:600">年定額 ${fixed}万円</div>
+        <div class="success-grid">${genSuccessGrid(successFixed)}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:var(--text3)">○ 成功率95%以上 &nbsp; △ 70〜95% &nbsp; × 70%未満</div>`;
+  el.appendChild(successDiv);
+
+  // Table comparison
+  const tableDiv = document.createElement('div');
+  tableDiv.className = 'chart-card';
+  // 定率テーブル
+  let tblRate = `<table class="result-table result-table-compact">
+  <thead><tr>
+    <th>時点</th>
+    <th style="color:rgba(255,255,255,0.4)">初期資産</th>
+    <th class="p5">下5%</th>
+    <th style="color:#f7ab6f">下20%</th>
+    <th class="median">中央値</th>
+    <th style="color:#3ecf8e">上20%</th>
+    <th class="p95">上5%</th>
+  </tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    tblRate+=`<tr>
+      <td>${y}年後</td>
+      <td style="color:rgba(255,255,255,0.4)">${fmt(total)}</td>
+      <td class="p5">${fmt(pct(rateResults[i],5))}</td>
+      <td style="color:#f7ab6f">${fmt(pct(rateResults[i],20))}</td>
+      <td class="median">${fmt(pct(rateResults[i],50))}</td>
+      <td style="color:#3ecf8e">${fmt(pct(rateResults[i],80))}</td>
+      <td class="p95">${fmt(pct(rateResults[i],95))}</td>
+    </tr>`;
+  });
+  tblRate += '</tbody></table>';
+
+  // 定額テーブル
+  let tblFixed = `<table class="result-table result-table-compact">
+  <thead><tr>
+    <th>時点</th>
+    <th style="color:rgba(255,255,255,0.4)">初期資産</th>
+    <th class="p5">下5%</th>
+    <th style="color:#f7ab6f">下20%</th>
+    <th class="median">中央値</th>
+    <th style="color:#3ecf8e">上20%</th>
+    <th class="p95">上5%</th>
+  </tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    tblFixed+=`<tr>
+      <td>${y}年後</td>
+      <td style="color:rgba(255,255,255,0.4)">${fmt(total)}</td>
+      <td class="p5">${fmt(pct(fixedResults[i],5))}</td>
+      <td style="color:#f7ab6f">${fmt(pct(fixedResults[i],20))}</td>
+      <td class="median">${fmt(pct(fixedResults[i],50))}</td>
+      <td style="color:#3ecf8e">${fmt(pct(fixedResults[i],80))}</td>
+      <td class="p95">${fmt(pct(fixedResults[i],95))}</td>
+    </tr>`;
+  });
+  tblFixed += '</tbody></table>';
+
+  tableDiv.innerHTML = `
+    <div class="chart-title" style="margin-bottom:10px">パーセンタイル別資産額（定率 / 定額）</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:10px;color:var(--accent);font-weight:600;margin-bottom:6px">年定率 ${(rate*100).toFixed(1)}%</div>
+        <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblRate}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:6px">年定額 ${fixed}万円</div>
+        <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblFixed}</div>
+      </div>
+    </div>`;
+  el.appendChild(tableDiv);
+}
+</script>
+</body>
+</html>
