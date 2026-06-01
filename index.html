@@ -124,6 +124,38 @@
     .header-icon { width: 36px; height: 36px; font-size: 18px; }
   }
 
+  /* Scenario info panel */
+  .scenario-info {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 768px) {
+    .scenario-info { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .scenario-info { grid-template-columns: 1fr; }
+  }
+  .sinfo-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sinfo-title {
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .sinfo-body {
+    font-size: 10px; color: var(--text2);
+    line-height: 1.6;
+  }
+  .sinfo-body span { color: var(--text); font-weight: 600; }
+
   /* Description banner */
   .desc-banner {
     background: linear-gradient(135deg, rgba(79,142,247,0.10) 0%, rgba(15,17,23,0.98) 100%);
@@ -492,6 +524,44 @@
     font-size: 11px; color: var(--text3);
   }
 
+  /* Inflation toggle bar */
+  .inflation-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-top: 4px;
+  }
+  .inflation-bar label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .nominal-real-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .nominal-real-label { font-size: 12px; color: var(--text2); margin-right: 4px; }
+  .nr-btn {
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nr-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nr-btn.nr-active {
+    background: rgba(79,142,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .inflation-note {
+    margin-left: auto; font-size: 11px; color: var(--text3);
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -506,7 +576,7 @@
     <h1>マネープランナー Pro</h1>
     <div class="header-sub">
       資産運用シミュレーション
-      <span class="header-badge">Monte Carlo</span>
+      <span class="header-badge">Normal+Clamp</span>
     </div>
   </div>
   <div class="header-stats">
@@ -529,7 +599,7 @@
 
 <div class="desc-banner">
   <span class="desc-icon">💡</span>
-  <p>全世界株式・S&P500・NASDAQ・レバレッジNASDAQ100（2倍・3倍）の5指数に対応。毎月の積立がどこまで育つか、老後に毎年いくら引き出せるか——過去の実績データをもとにモンテカルロ法で10,000通りの未来をシミュレーション。指数と金額を入れるだけで、資産形成から取崩しまで50年先の可能性を一瞬で可視化します。</p>
+  <p>全世界株式・S&P500・NASDAQ・レバレッジNASDAQ100（2倍・3倍）の5指数に対応。毎月の積立がどこまで育つか、老後に毎年いくら引き出せるか——各指数のシナリオ別μ・σをもとに正規分布で10,000通りの年次リターンを生成。歴史的最大下落を参考にしたクランプ処理で非現実的な資産消滅を抑制しつつ、悲観・中間・楽観の3シナリオでリスクとリターンを可視化します。</p>
 </div>
 
 <div class="tabs">
@@ -539,12 +609,47 @@
 
 <!-- ===== シナリオ切替バー ===== -->
 <div class="scenario-bar">
-  <span class="scenario-label">レバレッジシナリオ</span>
+  <span class="scenario-label">シナリオ</span>
+  <button class="scenario-btn" id="scenario-btn-pessimistic"
+    onclick="switchScenario('pessimistic')">🌧️ 悲観</button>
   <button class="scenario-btn scenario-active" id="scenario-btn-middle"
-    onclick="switchScenario('middle')">⚖️ 中間シナリオ</button>
+    onclick="switchScenario('middle')">⚖️ 中間</button>
   <button class="scenario-btn" id="scenario-btn-optimistic"
-    onclick="switchScenario('optimistic')">🚀 楽観シナリオ</button>
-  <span class="scenario-note">レバNASDAQ100（2倍・3倍）のμ・σに反映</span>
+    onclick="switchScenario('optimistic')">🚀 楽観</button>
+  <span class="scenario-note">全指数のμ・σに反映</span>
+</div>
+
+<!-- ===== シナリオ・インフレ説明パネル ===== -->
+<div class="scenario-info">
+  <div class="sinfo-card">
+    <div class="sinfo-title" style="color:#f76f6f">🌧️ 悲観シナリオ</div>
+    <div class="sinfo-body">
+      低成長・高ボラティリティを想定。過去の低迷期（1970〜90年代・リーマンショック後）を参考に設定。NASDAQ100はITバブル崩壊・リーマンショックを含む低迷期（2000〜2012年）を参考にμを下方補正し、σは実績データを適用。<br>
+      <span>全世界μ5% σ18% / S&P500 μ7% σ20% / NASDAQ100 μ11% σ26%</span>
+    </div>
+  </div>
+  <div class="sinfo-card">
+    <div class="sinfo-title" style="color:#7eb8ff">⚖️ 中間シナリオ</div>
+    <div class="sinfo-body">
+      各指数の設定来の長期平均リターンを使用。最も現実的・標準的な想定。NASDAQ100のμ・σは1993〜2024年（32年間）の実績データから算出した客観的な値。<br>
+      <span>全世界μ8.4% σ15% / S&P500 μ10.5% σ16% / NASDAQ100 μ17% σ26%</span>
+    </div>
+  </div>
+  <div class="sinfo-card">
+    <div class="sinfo-title" style="color:#3ecf8e">🚀 楽観シナリオ</div>
+    <div class="sinfo-body">
+      近年の強気相場（2010〜2024年）を参考に設定。テクノロジー主導の高成長が続く想定。NASDAQ100のμ・σは同期間（2010〜2024年）の実績データから算出。<br>
+      <span>全世界μ10% σ15% / S&P500 μ14% σ17% / NASDAQ100 μ18% σ20%</span>
+    </div>
+  </div>
+  <div class="sinfo-card">
+    <div class="sinfo-title" style="color:#a78bfa">💹 インフレ調整とは</div>
+    <div class="sinfo-body">
+      名目値：シミュレーション上の資産額。<br>
+      実質値：インフレ分を差し引いた<span>今のお金の価値</span>に換算した額。<br>
+      例）30年後・インフレ2%なら名目1億円 → 実質約<span>5,521万円</span>
+    </div>
+  </div>
 </div>
 
 <!-- ===== 資産形成 ===== -->
@@ -595,7 +700,7 @@
         <div class="index-header">
           <div class="index-dot" style="background:#f7934f"></div>
           <span class="index-name">NASDAQ</span>
-          <span class="index-badge">μ13% σ22%</span>
+          <span class="index-badge" id="badge-nasdaq">μ17% σ26%</span>
           <button class="index-toggle" id="tog-nasdaq" onclick="toggleIndex('nasdaq')"></button>
         </div>
         <div class="index-inputs" id="inp-nasdaq">
@@ -664,6 +769,17 @@
       <div style="font-size:10px;color:var(--text3);margin-top:-4px;">積立終了後は運用のみ継続</div>
     </div>
 
+    <div class="section">
+      <div class="section-title">インフレ率調整</div>
+      <div class="inflation-bar">
+        <label>インフレ率</label>
+        <input type="range" id="build-inflation" min="0" max="5" step="0.1" value="2"
+          oninput="document.getElementById('build-inflation-val').textContent=parseFloat(this.value).toFixed(1)+'%'">
+        <span class="slider-val" id="build-inflation-val">2.0%</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:-2px;">実質価値 = 名目資産 ÷ (1+インフレ率)^年数</div>
+    </div>
+
     <button class="run-btn" id="run-build" onclick="runBuild()">
       <span id="run-build-icon">▶</span> シミュレーション実行
       <div class="progress-bar" id="build-progress-wrap" style="display:none;position:absolute;bottom:0;left:0;right:0;border-radius:0 0 10px 10px">
@@ -672,11 +788,19 @@
     </button>
   </div>
 
-  <div class="panel-right" id="build-results">
+  <div class="panel-right" style="display:flex;flex-direction:column;overflow:hidden;padding:0;">
+    <div class="nominal-real-bar" id="build-nr-bar" style="display:none;">
+      <span class="nominal-real-label">表示:</span>
+      <button class="nr-btn nr-active" id="build-nr-nominal" onclick="switchNR('build','nominal')">📊 名目値</button>
+      <button class="nr-btn" id="build-nr-real" onclick="switchNR('build','real')">💹 実質値</button>
+      <span class="inflation-note" id="build-inflation-display"></span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;" id="build-results">
     <div class="empty-state" id="build-empty">
       <div class="empty-icon">📊</div>
       <p>指数と金額を入力して<br>シミュレーションを実行してください</p>
     </div>
+  </div>
   </div>
 </div>
 
@@ -754,16 +878,35 @@
       </div>
     </div>
 
+    <div class="section">
+      <div class="section-title">インフレ率調整</div>
+      <div class="inflation-bar">
+        <label>インフレ率</label>
+        <input type="range" id="draw-inflation" min="0" max="5" step="0.1" value="2"
+          oninput="document.getElementById('draw-inflation-val').textContent=parseFloat(this.value).toFixed(1)+'%'">
+        <span class="slider-val" id="draw-inflation-val">2.0%</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:-2px;">実質価値 = 名目資産 ÷ (1+インフレ率)^年数</div>
+    </div>
+
     <button class="run-btn" id="run-draw" onclick="runDraw()">
       <span>▶</span> シミュレーション実行
     </button>
   </div>
 
-  <div class="panel-right" id="draw-results">
+  <div class="panel-right" style="display:flex;flex-direction:column;overflow:hidden;padding:0;">
+    <div class="nominal-real-bar" id="draw-nr-bar" style="display:none;">
+      <span class="nominal-real-label">表示:</span>
+      <button class="nr-btn nr-active" id="draw-nr-nominal" onclick="switchNR('draw','nominal')">📊 名目値</button>
+      <button class="nr-btn" id="draw-nr-real" onclick="switchNR('draw','real')">💹 実質値</button>
+      <span class="inflation-note" id="draw-inflation-display"></span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;" id="draw-results">
     <div class="empty-state" id="draw-empty">
       <div class="empty-icon">💰</div>
       <p>資産額と取崩し条件を入力して<br>シミュレーションを実行してください</p>
     </div>
+  </div>
   </div>
 </div>
 
@@ -771,15 +914,29 @@
 // ===== INDEX DATA =====
 // ===== シナリオ定義 =====
 const SCENARIOS = {
+  pessimistic: {
+    label: '悲観シナリオ',
+    world: { mu: 0.05,  sigma: 0.18  },
+    sp:    { mu: 0.07,  sigma: 0.20  },
+    nasdaq:{ mu: 0.11,  sigma: 0.26  },
+    lev:   { mu: 0.12,  sigma: 0.50  },
+    lev3:  { mu: 0.14,  sigma: 0.75  },
+  },
   middle: {
     label: '中間シナリオ',
-    lev:  { mu: 0.21,  sigma: 0.455 },
-    lev3: { mu: 0.23,  sigma: 0.67  },
+    world: { mu: 0.084, sigma: 0.15  },
+    sp:    { mu: 0.105, sigma: 0.16  },
+    nasdaq:{ mu: 0.17,  sigma: 0.26  },
+    lev:   { mu: 0.21,  sigma: 0.455 },
+    lev3:  { mu: 0.23,  sigma: 0.67  },
   },
   optimistic: {
     label: '楽観シナリオ',
-    lev:  { mu: 0.23,  sigma: 0.46  },
-    lev3: { mu: 0.27,  sigma: 0.69  },
+    world: { mu: 0.10,  sigma: 0.15  },
+    sp:    { mu: 0.14,  sigma: 0.17  },
+    nasdaq:{ mu: 0.18,  sigma: 0.20  },
+    lev:   { mu: 0.23,  sigma: 0.46  },
+    lev3:  { mu: 0.27,  sigma: 0.69  },
   },
 };
 let currentScenario = 'middle';
@@ -787,17 +944,26 @@ let currentScenario = 'middle';
 function switchScenario(key) {
   currentScenario = key;
   const s = SCENARIOS[key];
-  IDX.lev.mu    = s.lev.mu;
-  IDX.lev.sigma = s.lev.sigma;
-  IDX.lev3.mu   = s.lev3.mu;
-  IDX.lev3.sigma= s.lev3.sigma;
+  // 全指数のμ・σを更新
+  IDX.world.mu    = s.world.mu;
+  IDX.world.sigma = s.world.sigma;
+  IDX.sp.mu       = s.sp.mu;
+  IDX.sp.sigma    = s.sp.sigma;
+  IDX.nasdaq.mu   = s.nasdaq.mu;
+  IDX.nasdaq.sigma= s.nasdaq.sigma;
+  IDX.lev.mu      = s.lev.mu;
+  IDX.lev.sigma   = s.lev.sigma;
+  IDX.lev3.mu     = s.lev3.mu;
+  IDX.lev3.sigma  = s.lev3.sigma;
   // バッジ更新
+  document.getElementById('badge-nasdaq').textContent
+    = `μ${Math.round(s.nasdaq.mu*100)}% σ${Math.round(s.nasdaq.sigma*100)}%`;
   document.getElementById('badge-lev').textContent
     = `μ≈${Math.round(s.lev.mu*100)}% σ≈${Math.round(s.lev.sigma*100)}%`;
   document.getElementById('badge-lev3').textContent
     = `μ≈${Math.round(s.lev3.mu*100)}% σ≈${Math.round(s.lev3.sigma*100)}%`;
   // ボタン状態更新
-  ['middle','optimistic'].forEach(k => {
+  ['pessimistic','middle','optimistic'].forEach(k => {
     const btn = document.getElementById('scenario-btn-'+k);
     btn.classList.toggle('scenario-active', k===key);
   });
@@ -808,12 +974,13 @@ function switchScenario(key) {
 const IDX = {
   world:  { mu: 0.084, sigma: 0.15,  color: '#4f8ef7', name: '全世界株式' },
   sp:     { mu: 0.105, sigma: 0.16,  color: '#3ecf8e', name: 'S&P500' },
-  nasdaq: { mu: 0.13,  sigma: 0.22,  color: '#f7934f', name: 'NASDAQ' },
+  nasdaq: { mu: 0.17,  sigma: 0.26,  color: '#f7934f', name: 'NASDAQ100' },
   lev:    { mu: 0.21,  sigma: 0.455, color: '#a78bfa', name: 'レバNASDAQ100（2倍）' },
   lev3:   { mu: 0.23,  sigma: 0.67,  color: '#f76f6f', name: 'レバNASDAQ100（3倍）' },
 };
 const IDX_KEYS = ['world','sp','nasdaq','lev','lev3'];
 const ENABLED = { world:true, sp:true, nasdaq:false, lev:false, lev3:false };
+
 
 // ===== UTILS =====
 function randn() {
@@ -832,7 +999,57 @@ function fmt(v) {
   if(v>=10000) return (v/10000).toFixed(1)+'億円';
   return Math.round(v).toLocaleString()+'万円';
 }
-function fmtM(v) { return Math.round(v).toLocaleString()+'万円'; }
+
+// ===== TAB =====
+function switchTab(t) {
+  ['build','draw'].forEach(k => {
+    document.getElementById('tab-'+k).classList.toggle('active', k===t);
+    document.getElementById('page-'+k).classList.toggle('active', k===t);
+  });
+}
+
+// ===== TOGGLE =====
+function toggleIndex(key) {
+  ENABLED[key] = !ENABLED[key];
+  const tog = document.getElementById('tog-'+key);
+  const inp = document.getElementById('inp-'+key);
+  tog.classList.toggle('on', ENABLED[key]);
+  inp.querySelectorAll('input').forEach(i => i.disabled = !ENABLED[key]);
+}
+
+// ===== 名目/実質切替 =====
+let buildMode = 'nominal';
+let drawMode  = 'nominal';
+let buildInflation = 0.02;
+let drawInflation  = 0.02;
+let lastBuildResults = null;
+let lastBuildCheckpoints = null;
+let lastBuildPrincipalLine = null;
+let lastBuildActive = null;
+let lastBuildYears = null;
+let lastDrawResults = null;
+
+function realFactor(inflationRate, years) {
+  return 1 / Math.pow(1 + inflationRate, years);
+}
+function toReal(val, inflationRate, years) {
+  return val * realFactor(inflationRate, years);
+}
+function switchNR(phase, mode) {
+  if(phase === 'build') {
+    buildMode = mode;
+    ['nominal','real'].forEach(m => {
+      document.getElementById('build-nr-'+m).classList.toggle('nr-active', m===mode);
+    });
+    if(lastBuildResults) renderBuildResults();
+  } else {
+    drawMode = mode;
+    ['nominal','real'].forEach(m => {
+      document.getElementById('draw-nr-'+m).classList.toggle('nr-active', m===mode);
+    });
+    if(lastDrawResults) renderDrawResults();
+  }
+}
 
 // ===== SLIDER SYNC: 積立終了年はシミュレーション年数を超えられない =====
 function onBuildYearsChange() {
@@ -846,65 +1063,52 @@ function onBuildYearsChange() {
   }
 }
 
-// ===== TOGGLE =====
-function toggleIndex(key) {
-  ENABLED[key] = !ENABLED[key];
-  const tog = document.getElementById('tog-'+key);
-  const inp = document.getElementById('inp-'+key);
-  tog.classList.toggle('on', ENABLED[key]);
-  inp.querySelectorAll('input').forEach(i => i.disabled = !ENABLED[key]);
+// ===== 正規分布＋クランプ方式 =====
+const CLAMP = {
+  world:  -0.50,
+  sp:     -0.55,
+  nasdaq: -0.65,
+  lev:    -0.80,
+  lev3:   -0.90,
+};
+
+// 対数正規分布パラメータ変換（レバレッジ系統用）
+function lognormalParams(mu, sigma) {
+  const sigma_log = Math.sqrt(Math.log(1 + Math.pow(sigma / (1 + mu), 2)));
+  const mu_log = Math.log(1 + mu) - 0.5 * sigma_log * sigma_log;
+  return { mu_log, sigma_log };
 }
 
-// ===== TAB =====
-function switchTab(t) {
-  ['build','draw'].forEach(k => {
-    document.getElementById('tab-'+k).classList.toggle('active', k===t);
-    document.getElementById('page-'+k).classList.toggle('active', k===t);
-  });
-}
-
-// ===== SIMULATE ONE PATH (growth) =====
-function simPath(entries, years) {
-  // entries: [{lump, monthly, mu, sigma}]
-  let total = entries.reduce((s,e)=>s+e.lump, 0);
-  const monthly_total = entries.reduce((s,e)=>s+e.monthly, 0);
-  const mu_eff = entries.length===0 ? 0 : entries.reduce((s,e)=>{
-    const w = (e.lump+e.monthly*12) || 1;
-    return s + e.mu*(e.lump+e.monthly*12);
-  },0) / Math.max(1, entries.reduce((s,e)=>s+(e.lump+e.monthly*12),0));
-  const sig_eff = entries.length===0 ? 0 : Math.sqrt(entries.reduce((s,e)=>{
-    const w = (e.lump+e.monthly*12) || 1;
-    return s + e.sigma*e.sigma*(e.lump+e.monthly*12);
-  },0) / Math.max(1, entries.reduce((s,e)=>s+(e.lump+e.monthly*12),0)));
-
-  // simulate monthly with blended stats
-  let val = total;
-  const annual_monthly = monthly_total * 12;
-  const snapshots = [];
-  for(let y=0; y<years; y++) {
-    const r = randn() * sig_eff + mu_eff;
-    val = val * (1+r) + annual_monthly;
-    if((y+1)%5===0) snapshots.push(Math.max(0, val));
+// 正規分布+クランプ（通常指数）/ 対数正規分布+クランプ（レバレッジ系統）
+function clampedReturn(key, mu, sigma) {
+  const clamp = CLAMP[key] || -0.50;
+  if(key === 'lev' || key === 'lev3') {
+    // レバレッジ系：対数正規分布（上側の極端な膨らみ抑制・複利整合性確保）
+    const { mu_log, sigma_log } = lognormalParams(mu, sigma);
+    const log_r = randn() * sigma_log + mu_log;
+    const r = Math.exp(log_r) - 1;
+    return Math.max(clamp, r);
   }
-  return snapshots;
+  // 通常指数：正規分布+クランプ
+  const r = randn() * sigma + mu;
+  return Math.max(clamp, r);
 }
 
-// ===== SIMULATE PORTFOLIO =====
+
+// ===== SIMULATE PORTFOLIO（正規分布＋クランプ方式） =====
 function simPortfolio(entries, years, accumYears) {
-  // accumYears: 積立終了年（以降は積立なし・運用のみ）
   const n = 10000;
   const checkpoints = [];
   for(let i=0;i<Math.floor(years/5);i++) checkpoints.push((i+1)*5);
   const results = checkpoints.map(()=>[]);
 
   for(let sim=0; sim<n; sim++) {
-    // run each index separately
     let vals = entries.map(e => e.lump);
     for(let y=0; y<years; y++) {
-      const isAccum = y < accumYears; // 積立期間内かどうか
-      vals = vals.map((v,i) => {
+      const isAccum = y < accumYears;
+      vals = vals.map((v, i) => {
         const e = entries[i];
-        const r = randn() * e.sigma + e.mu;
+        const r = clampedReturn(e.key, e.mu, e.sigma);
         return Math.max(0, v*(1+r) + (isAccum ? e.monthly*12 : 0));
       });
       if((y+1)%5===0) {
@@ -964,125 +1168,149 @@ function runBuild() {
       return (totalLump + totalMonthly*12*effectiveY) / 10000;
     });
 
-    // --- Build results HTML ---
-    const el = document.getElementById('build-results');
-    el.innerHTML = '';
+    // 結果を保存
+    lastBuildResults = results;
+    lastBuildCheckpoints = checkpoints;
+    lastBuildPrincipalLine = principalLine;
+    lastBuildActive = active;
+    lastBuildYears = years;
+    buildInflation = parseFloat(document.getElementById('build-inflation').value) / 100;
+    document.getElementById('build-inflation-display').textContent =
+      `インフレ率 ${(buildInflation*100).toFixed(1)}% 調整済み`;
+    document.getElementById('build-nr-bar').style.display = 'flex';
 
-    // Fan chart
-    const chartDiv = document.createElement('div');
-    chartDiv.className = 'chart-card';
-    chartDiv.innerHTML = `
-      <div class="chart-title">ポートフォリオ資産推移（合算）</div>
-      <div class="chart-subtitle">10,000回シミュレーション・パーセンタイル帯表示（億円）</div>
-      <div class="chart-wrap"><canvas id="build-canvas" height="280"></canvas></div>
-    `;
-    el.appendChild(chartDiv);
-
-    buildChart = destroyChart(buildChart);
-    setTimeout(()=>{
-      const ctx = document.getElementById('build-canvas').getContext('2d');
-      const labels = checkpoints.map(y=>y+'年');
-      // Fan bands
-      const datasets = [
-        { label:'5-95%帯', data: results.map(r=>[pct(r,5)/10000, pct(r,95)/10000]), backgroundColor:'rgba(79,142,247,0.10)', borderWidth:0, pointRadius:0 },
-        { label:'20-80%帯', data: results.map(r=>[pct(r,20)/10000, pct(r,80)/10000]), backgroundColor:'rgba(79,142,247,0.18)', borderWidth:0, pointRadius:0 },
-        { label:'中央値', data: results.map(r=>pct(r,50)/10000), borderColor:'#4f8ef7', backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#4f8ef7', tension:0.3 },
-        { label:'下位5%', data: results.map(r=>pct(r,5)/10000), borderColor:'rgba(247,111,111,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(247,111,111,0.7)', tension:0.3 },
-        { label:'下位20%', data: results.map(r=>pct(r,20)/10000), borderColor:'rgba(247,171,111,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(247,171,111,0.8)', tension:0.3 },
-        { label:'上位20%', data: results.map(r=>pct(r,80)/10000), borderColor:'rgba(62,207,142,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(62,207,142,0.8)', tension:0.3 },
-        { label:'上位5%', data: results.map(r=>pct(r,95)/10000), borderColor:'rgba(126,184,255,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(126,184,255,0.7)', tension:0.3 },
-        { label:'投資元本', data: principalLine, borderColor:'rgba(255,255,255,0.35)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[2,4], pointRadius:0, tension:0 },
-      ];
-      buildChart = new Chart(ctx, {
-        type:'line',
-        data:{ labels, datasets },
-        options:{
-          responsive:true,
-          maintainAspectRatio:true,
-          plugins:{
-            legend:{ display:true, position:'bottom', labels:{ color:'#8a93a8', font:{size:11}, boxWidth:14, padding:12 } },
-            tooltip:{ mode:'index', intersect:false, backgroundColor:'#1e2333', borderColor:'#2a3040', borderWidth:1,
-              titleColor:'#e8eaf0', bodyColor:'#8a93a8',
-              callbacks:{ label: ctx => {
-                const v = ctx.raw;
-                if(Array.isArray(v)) return null;
-                const man = Math.round(v * 10000).toLocaleString();
-                return `${ctx.dataset.label}: ${v.toFixed(2)}億円（${man}万円）`;
-              }}
-            }
-          },
-          scales:{
-            x:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478'} },
-            y:{ grid:{color:'#2a3040'}, ticks:{ color:'#5a6478', callback: v=>v+'億' },
-              title:{display:true,text:'資産額（億円）',color:'#5a6478',font:{size:11}} }
-          },
-          interaction:{ mode:'index', intersect:false }
-        }
-      });
-    },50);
-
-    // Results table
-    const tableDiv = document.createElement('div');
-    tableDiv.className = 'chart-card';
-    let tbl = `<div class="chart-title">パーセンタイル別資産額</div>
-    <table class="result-table">
-    <thead><tr><th>時点</th><th style="color:rgba(255,255,255,0.45)">投資元本</th><th class="p5">下位5%</th><th style="color:#f7ab6f">下位20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上位20%</th><th class="p95">上位5%</th></tr></thead><tbody>`;
-    checkpoints.forEach((y,i)=>{
-      const r = results[i];
-      const principal = totalLump + totalMonthly*12*Math.min(y, accumYears);
-      tbl += `<tr>
-        <td>${y}年後</td>
-        <td style="color:rgba(255,255,255,0.45)">${fmt(principal)}</td>
-        <td class="p5">${fmt(pct(r,5))}</td>
-        <td style="color:#f7ab6f">${fmt(pct(r,20))}</td>
-        <td class="median">${fmt(pct(r,50))}</td>
-        <td style="color:#3ecf8e">${fmt(pct(r,80))}</td>
-        <td class="p95">${fmt(pct(r,95))}</td>
-      </tr>`;
-    });
-    tbl += '</tbody></table>';
-    tableDiv.innerHTML = `<div class="chart-title" style="margin-bottom:8px">パーセンタイル別資産額</div><div class="result-table-wrap" style="max-height:260px;overflow-y:auto;">` + tbl + `</div>`;
-    el.appendChild(tableDiv);
-
-    // Pie chart
-    if(active.length>1) {
-      const pieDiv = document.createElement('div');
-      pieDiv.className = 'chart-card';
-      const totalInvest = active.reduce((s,e)=>s+e.lump+e.monthly*12*years,0);
-      const shares = active.map(e=>((e.lump+e.monthly*12*years)/totalInvest*100).toFixed(1));
-      let legendHtml = active.map((e,i)=>`
-        <div class="pie-item">
-          <div class="pie-dot" style="background:${e.color}"></div>
-          <span class="pie-lbl">${e.name}</span>
-          <span class="pie-pct">${shares[i]}%</span>
-        </div>`).join('');
-      pieDiv.innerHTML = `
-        <div class="chart-title">投入額ベースのアセット配分</div>
-        <div class="pie-wrap">
-          <div class="pie-canvas-wrap"><canvas id="pie-canvas"></canvas></div>
-          <div class="pie-legend">${legendHtml}</div>
-        </div>`;
-      el.appendChild(pieDiv);
-      pieChart = destroyChart(pieChart);
-      setTimeout(()=>{
-        const ctx2 = document.getElementById('pie-canvas').getContext('2d');
-        pieChart = new Chart(ctx2, {
-          type:'doughnut',
-          data:{ labels: active.map(e=>e.name), datasets:[{
-            data: active.map(e=>e.lump+e.monthly*12*years),
-            backgroundColor: active.map(e=>e.color),
-            borderWidth:0,
-          }]},
-          options:{ responsive:true, maintainAspectRatio:true,
-            plugins:{ legend:{display:false} }
-          }
-        });
-      },60);
-    }
+    renderBuildResults();
 
     btn.classList.remove('running');
     btn.querySelector('span').textContent='▶';
   }, 30);
+}
+
+function renderBuildResults() {
+  const results = lastBuildResults;
+  const checkpoints = lastBuildCheckpoints;
+  const principalLine = lastBuildPrincipalLine;
+  const active = lastBuildActive;
+  const years = lastBuildYears;
+  const infl = buildInflation;
+  const isReal = buildMode === 'real';
+  const modeLabel = isReal ? `実質値（インフレ率${(infl*100).toFixed(1)}%）` : '名目値';
+
+  // 実質変換関数
+  const adj = (val, y) => isReal ? toReal(val, infl, y) : val;
+  const adjArr = (arr, y) => arr.map(v => adj(v, y));
+
+  const el = document.getElementById('build-results');
+  el.innerHTML = '';
+
+  // Fan chart
+  const chartDiv = document.createElement('div');
+  chartDiv.className = 'chart-card';
+  chartDiv.innerHTML = `
+    <div class="chart-title">ポートフォリオ資産推移（合算）<span style="font-size:11px;color:var(--text3);margin-left:8px;">${modeLabel}</span></div>
+    <div class="chart-subtitle">10,000回シミュレーション・パーセンタイル帯表示（億円）</div>
+    <div class="chart-wrap"><canvas id="build-canvas" height="280"></canvas></div>
+  `;
+  el.appendChild(chartDiv);
+
+  buildChart = destroyChart(buildChart);
+  setTimeout(()=>{
+    const ctx = document.getElementById('build-canvas').getContext('2d');
+    const labels = checkpoints.map(y=>y+'年');
+    const datasets = [
+      { label:'5-95%帯', data: checkpoints.map((y,i)=>[adj(pct(results[i],5),y)/10000, adj(pct(results[i],95),y)/10000]), backgroundColor:'rgba(79,142,247,0.10)', borderWidth:0, pointRadius:0 },
+      { label:'20-80%帯', data: checkpoints.map((y,i)=>[adj(pct(results[i],20),y)/10000, adj(pct(results[i],80),y)/10000]), backgroundColor:'rgba(79,142,247,0.18)', borderWidth:0, pointRadius:0 },
+      { label:'中央値', data: checkpoints.map((y,i)=>adj(pct(results[i],50),y)/10000), borderColor:'#4f8ef7', backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#4f8ef7', tension:0.3 },
+      { label:'下位5%', data: checkpoints.map((y,i)=>adj(pct(results[i],5),y)/10000), borderColor:'rgba(247,111,111,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(247,111,111,0.7)', tension:0.3 },
+      { label:'下位20%', data: checkpoints.map((y,i)=>adj(pct(results[i],20),y)/10000), borderColor:'rgba(247,171,111,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(247,171,111,0.8)', tension:0.3 },
+      { label:'上位20%', data: checkpoints.map((y,i)=>adj(pct(results[i],80),y)/10000), borderColor:'rgba(62,207,142,0.8)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,3], pointRadius:2, pointBackgroundColor:'rgba(62,207,142,0.8)', tension:0.3 },
+      { label:'上位5%', data: checkpoints.map((y,i)=>adj(pct(results[i],95),y)/10000), borderColor:'rgba(126,184,255,0.7)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[4,3], pointRadius:2, pointBackgroundColor:'rgba(126,184,255,0.7)', tension:0.3 },
+      { label:'投資元本', data: principalLine.map((v,i)=>adj(v*10000,checkpoints[i])/10000), borderColor:'rgba(255,255,255,0.35)', backgroundColor:'transparent', borderWidth:1.5, borderDash:[2,4], pointRadius:0, tension:0 },
+    ];
+    buildChart = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:true, position:'bottom', labels:{ color:'#8a93a8', font:{size:11}, boxWidth:14, padding:12 } },
+          tooltip:{ mode:'index', intersect:false, backgroundColor:'#1e2333', borderColor:'#2a3040', borderWidth:1,
+            titleColor:'#e8eaf0', bodyColor:'#8a93a8',
+            callbacks:{ label: ctx => {
+              const v = ctx.raw;
+              if(Array.isArray(v)) return null;
+              const man = Math.round(v * 10000).toLocaleString();
+              return `${ctx.dataset.label}: ${v.toFixed(2)}億円（${man}万円）`;
+            }}
+          }
+        },
+        scales:{
+          x:{ grid:{color:'#2a3040'}, ticks:{color:'#5a6478'} },
+          y:{ grid:{color:'#2a3040'}, ticks:{ color:'#5a6478', callback: v=>v+'億' },
+            title:{display:true,text:`資産額（億円）${isReal?'・実質値':''}`,color:'#5a6478',font:{size:11}} }
+        }
+      }
+    });
+  },50);
+
+  // Results table
+  const tableDiv = document.createElement('div');
+  tableDiv.className = 'chart-card';
+  let tbl = `<table class="result-table">
+    <thead><tr><th>時点</th><th style="color:rgba(255,255,255,0.45)">投資元本</th><th class="p5">下位5%</th><th style="color:#f7ab6f">下位20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上位20%</th><th class="p95">上位5%</th></tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    const r = results[i];
+    const principal = lastBuildActive.reduce((s,e)=>s+(e.lump+e.monthly*12*Math.min(y,parseInt(document.getElementById('build-accum').value))),0);
+    tbl += `<tr>
+      <td>${y}年後</td>
+      <td style="color:rgba(255,255,255,0.45)">${fmt(adj(principal,y))}</td>
+      <td class="p5">${fmt(adj(pct(r,5),y))}</td>
+      <td style="color:#f7ab6f">${fmt(adj(pct(r,20),y))}</td>
+      <td class="median">${fmt(adj(pct(r,50),y))}</td>
+      <td style="color:#3ecf8e">${fmt(adj(pct(r,80),y))}</td>
+      <td class="p95">${fmt(adj(pct(r,95),y))}</td>
+    </tr>`;
+  });
+  tbl += '</tbody></table>';
+  tableDiv.innerHTML = `<div class="chart-title" style="margin-bottom:8px">パーセンタイル別資産額<span style="font-size:11px;color:var(--text3);margin-left:8px;">${modeLabel}</span></div><div class="result-table-wrap" style="max-height:260px;overflow-y:auto;">${tbl}</div>`;
+  el.appendChild(tableDiv);
+
+  // Pie chart
+  if(active.length>1) {
+    const pieDiv = document.createElement('div');
+    pieDiv.className = 'chart-card';
+    const totalInvest = active.reduce((s,e)=>s+e.lump+e.monthly*12*years,0);
+    const shares = active.map(e=>((e.lump+e.monthly*12*years)/totalInvest*100).toFixed(1));
+    let legendHtml = active.map((e,i)=>`
+      <div class="pie-item">
+        <div class="pie-dot" style="background:${e.color}"></div>
+        <span class="pie-lbl">${e.name}</span>
+        <span class="pie-pct">${shares[i]}%</span>
+      </div>`).join('');
+    pieDiv.innerHTML = `
+      <div class="chart-title">投入額ベースのアセット配分</div>
+      <div class="pie-wrap">
+        <div class="pie-canvas-wrap"><canvas id="pie-canvas"></canvas></div>
+        <div class="pie-legend">${legendHtml}</div>
+      </div>`;
+    el.appendChild(pieDiv);
+    pieChart = destroyChart(pieChart);
+    setTimeout(()=>{
+      const ctx2 = document.getElementById('pie-canvas').getContext('2d');
+      pieChart = new Chart(ctx2, {
+        type:'doughnut',
+        data:{ labels: active.map(e=>e.name), datasets:[{
+          data: active.map(e=>e.lump+e.monthly*12*years),
+          backgroundColor: active.map(e=>e.color),
+          borderWidth:0,
+        }]},
+        options:{ responsive:true, maintainAspectRatio:true,
+          plugins:{ legend:{display:false} }
+        }
+      });
+    },60);
+  }
 }
 
 // ===== RUN DRAW =====
@@ -1110,23 +1338,26 @@ function runDraw() {
   const rateWithdrawResults = checkpoints.map(()=>[]); // 定率取崩し額
   const fixedResults = checkpoints.map(()=>[]);
 
+  // 加重平均用のキー・ウェイト設定
+  const activeKeys = keys.filter((_,i) => assets[i] > 0);
+  const activeWeights = activeKeys.map(k => assets[keys.indexOf(k)] / total);
+
   for(let sim=0; sim<N; sim++){
     let vr=total, vf=total;
-    // 定率：5年ごとの取崩し額を累積平均で記録
-    const rateWithdrawAcc = checkpoints.map(()=>[]); // 各チェックポイント期間の年間取崩し額
     let periodWithdrawSum = checkpoints.map(()=>0);
     let periodCount = checkpoints.map(()=>0);
 
     for(let y=0; y<years; y++){
-      const r=randn()*sig_eff+mu_eff;
-      // 定率：運用後残高×定率が今年の取崩し額
+      const r = activeKeys.reduce((s, k) => {
+        const idxEntry = IDX[k];
+        return s + clampedReturn(k, idxEntry.mu, idxEntry.sigma) * activeWeights[activeKeys.indexOf(k)];
+      }, 0);
       const preR = Math.max(0, vr*(1+r));
       const withdrawR = preR * rate;
       vr = preR - withdrawR;
       vf = Math.max(0, vf*(1+r) - fixed);
 
-      // チェックポイントの期間に属するか判定（直前5年間の平均取崩し額）
-      const ci = Math.floor(y/5); // 0始まり
+      const ci = Math.floor(y/5);
       if(ci < checkpoints.length){
         periodWithdrawSum[ci] += withdrawR;
         periodCount[ci]++;
@@ -1136,7 +1367,6 @@ function runDraw() {
         const idx=Math.floor((y+1)/5)-1;
         rateResults[idx].push(vr);
         fixedResults[idx].push(vf);
-        // その5年間の平均年間取崩し額
         const avg = periodCount[idx]>0 ? periodWithdrawSum[idx]/periodCount[idx] : 0;
         rateWithdrawResults[idx].push(avg);
       }
@@ -1292,6 +1522,7 @@ function runDraw() {
   successDiv.className = 'chart-card';
   successDiv.innerHTML = `
     <div class="chart-title">成功確率（残高≥0）</div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
       <div>
         <div style="font-size:13px;color:var(--accent);margin-bottom:10px;font-weight:700">年定率 ${(rate*100).toFixed(1)}%</div>
@@ -1400,6 +1631,99 @@ function runDraw() {
     <div style="font-size:12px;color:var(--text3);margin-bottom:10px">残高に連動して変動する年間取崩し額の分布（各5年期間の平均）</div>
     <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblWithdraw}</div>`;
   el.appendChild(withdrawTableDiv);
+
+  // 結果を保存
+  lastDrawResults = { rateResults, fixedResults, rateWithdrawResults, checkpoints, rate, fixed, total };
+  drawInflation = parseFloat(document.getElementById('draw-inflation').value) / 100;
+  document.getElementById('draw-inflation-display').textContent =
+    `インフレ率 ${(drawInflation*100).toFixed(1)}% 調整済み`;
+  document.getElementById('draw-nr-bar').style.display = 'flex';
+}
+
+function renderDrawResults() {
+  if(!lastDrawResults) return;
+  const { rateResults, fixedResults, rateWithdrawResults, checkpoints, rate, fixed } = lastDrawResults;
+  const infl = drawInflation;
+  const isReal = drawMode === 'real';
+  const modeLabel = isReal ? `実質値（インフレ率${(infl*100).toFixed(1)}%）` : '名目値';
+  const adj = (val, y) => isReal ? toReal(val, infl, y) : val;
+
+  const el = document.getElementById('draw-results');
+  // チャート以外の要素（テーブル・成功確率）のみ再描画
+  // テーブルカードのみ更新（チャートは重いので切替時はテーブルのみ）
+  const tables = el.querySelectorAll('.nr-updatable');
+  tables.forEach(t => t.remove());
+
+  // 成功確率は名目/実質変わらないのでそのまま
+  // パーセンタイルテーブルを再生成
+  const tableDiv = document.createElement('div');
+  tableDiv.className = 'chart-card nr-updatable';
+
+  let tblRate = `<table class="result-table result-table-compact">
+  <thead><tr><th>時点</th><th style="color:rgba(255,255,255,0.4)">初期資産</th><th class="p5">下5%</th><th style="color:#f7ab6f">下20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上20%</th><th class="p95">上5%</th></tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    tblRate+=`<tr>
+      <td>${y}年後</td>
+      <td style="color:rgba(255,255,255,0.4)">${fmt(adj(lastDrawResults.total||0,y))}</td>
+      <td class="p5">${fmt(adj(pct(rateResults[i],5),y))}</td>
+      <td style="color:#f7ab6f">${fmt(adj(pct(rateResults[i],20),y))}</td>
+      <td class="median">${fmt(adj(pct(rateResults[i],50),y))}</td>
+      <td style="color:#3ecf8e">${fmt(adj(pct(rateResults[i],80),y))}</td>
+      <td class="p95">${fmt(adj(pct(rateResults[i],95),y))}</td>
+    </tr>`;
+  });
+  tblRate += '</tbody></table>';
+
+  let tblFixed = `<table class="result-table result-table-compact">
+  <thead><tr><th>時点</th><th style="color:rgba(255,255,255,0.4)">初期資産</th><th class="p5">下5%</th><th style="color:#f7ab6f">下20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上20%</th><th class="p95">上5%</th></tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    tblFixed+=`<tr>
+      <td>${y}年後</td>
+      <td style="color:rgba(255,255,255,0.4)">${fmt(adj(lastDrawResults.total||0,y))}</td>
+      <td class="p5">${fmt(adj(pct(fixedResults[i],5),y))}</td>
+      <td style="color:#f7ab6f">${fmt(adj(pct(fixedResults[i],20),y))}</td>
+      <td class="median">${fmt(adj(pct(fixedResults[i],50),y))}</td>
+      <td style="color:#3ecf8e">${fmt(adj(pct(fixedResults[i],80),y))}</td>
+      <td class="p95">${fmt(adj(pct(fixedResults[i],95),y))}</td>
+    </tr>`;
+  });
+  tblFixed += '</tbody></table>';
+
+  tableDiv.innerHTML = `
+    <div class="chart-title" style="margin-bottom:10px">パーセンタイル別資産額（定率 / 定額）<span style="font-size:11px;color:var(--text3);margin-left:8px;">${modeLabel}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:8px">年定率 ${(rate*100).toFixed(1)}%</div>
+        <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblRate}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;color:var(--green);font-weight:700;margin-bottom:8px">年定額 ${fixed}万円</div>
+        <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblFixed}</div>
+      </div>
+    </div>`;
+  el.appendChild(tableDiv);
+
+  // 年間取崩し額テーブル（実質変換）
+  const withdrawTableDiv2 = document.createElement('div');
+  withdrawTableDiv2.className = 'chart-card nr-updatable';
+  let tblW = `<table class="result-table result-table-compact">
+  <thead><tr><th>時点</th><th class="p5">下5%</th><th style="color:#f7ab6f">下20%</th><th class="median">中央値</th><th style="color:#3ecf8e">上20%</th><th class="p95">上5%</th></tr></thead><tbody>`;
+  checkpoints.forEach((y,i)=>{
+    tblW+=`<tr>
+      <td>${y}年後</td>
+      <td class="p5">${Math.round(adj(pct(rateWithdrawResults[i],5),y)).toLocaleString()}万円</td>
+      <td style="color:#f7ab6f">${Math.round(adj(pct(rateWithdrawResults[i],20),y)).toLocaleString()}万円</td>
+      <td class="median">${Math.round(adj(pct(rateWithdrawResults[i],50),y)).toLocaleString()}万円</td>
+      <td style="color:#3ecf8e">${Math.round(adj(pct(rateWithdrawResults[i],80),y)).toLocaleString()}万円</td>
+      <td class="p95">${Math.round(adj(pct(rateWithdrawResults[i],95),y)).toLocaleString()}万円</td>
+    </tr>`;
+  });
+  tblW += '</tbody></table>';
+  withdrawTableDiv2.innerHTML = `
+    <div class="chart-title" style="margin-bottom:10px">年間取崩し額（定率 ${(rate*100).toFixed(1)}%）<span style="font-size:11px;color:var(--text3);margin-left:8px;">${modeLabel}</span></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">残高に連動して変動する年間取崩し額の分布（各5年期間の平均）</div>
+    <div class="result-table-wrap" style="max-height:240px;overflow-y:auto;">${tblW}</div>`;
+  el.appendChild(withdrawTableDiv2);
 }
 </script>
 </body>
